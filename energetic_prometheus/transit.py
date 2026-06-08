@@ -109,8 +109,8 @@ class TransitResult:
             return float(1.0 - spec[line_mask].mean() / R_cont)
         raise ValueError(f"Unknown mode {mode!r}; use 'peak' or 'mean'.")
 
-    def lightcurve(self, line_window_ang=(NA_D2_ANG - 0.75, NA_D2_ANG + 0.75),
-                   continuum_exclude_ang=(5884.0, 5902.0)) -> np.ndarray:
+    def lightcurve(self, line_window_ang=(NA_D2_ANG - 0.375, NA_D2_ANG + 0.375),
+                   continuum_exclude_ang=(5884.0, 5902.0), mode='mean') -> np.ndarray:
         """Band-integrated lightcurve ``L(phase)`` = line / continuum.
 
         Values < 1 mark net excess absorption at that orbital phase.  Requires a
@@ -119,11 +119,19 @@ class TransitResult:
         Args:
             line_window_ang: ``(lo, hi)`` line bandpass [Å].
             continuum_exclude_ang: continuum exclusion region [Å].
+            mode: 'mean' for band-integrated flux, 'peak' for max line depth.
         """
         line_mask, cont_mask = self._masks(line_window_ang,
                                            continuum_exclude_ang)
-        line_per_phase = np.mean(self.R_2D[:, line_mask], axis=1)
         cont_per_phase = np.mean(self.R_2D[:, cont_mask], axis=1)
+        
+        if mode == 'mean':
+            line_per_phase = np.mean(self.R_2D[:, line_mask], axis=1)
+        elif mode == 'peak':
+            line_per_phase = np.min(self.R_2D[:, line_mask], axis=1)
+        else:
+            raise ValueError(f"Unknown mode {mode!r}; use 'peak' or 'mean'.")
+            
         return line_per_phase / cont_per_phase
 
 
