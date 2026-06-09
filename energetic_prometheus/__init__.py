@@ -27,7 +27,8 @@ Quick start::
 
 from __future__ import annotations
 
-from . import dishoom_adapter, escape, grids, scenarios, transit
+from . import constants, dishoom_adapter, escape, grids, scenarios, transit
+from .constants import MINERALS, MineralEntry
 from .dishoom_adapter import CONST, MINERAL_DB
 from .escape import (
     EnergyLimitedEscape,
@@ -59,7 +60,10 @@ __all__ = [
     "radial_wind_scenario",
     # constants + submodules
     "CONST",
+    "MINERALS",
+    "MineralEntry",
     "MINERAL_DB",
+    "constants",
     "grids",
     "scenarios",
     "escape",

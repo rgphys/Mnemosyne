@@ -20,70 +20,46 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from ._bootstrap import silence_stdout
+from . import constants as _c
 
 # ── Import dishoom once, quietly ────────────────────────────────────────────
 with silence_stdout():
     import moon_functions_5 as _moon
-    import universal as _u
     import functions4 as _f4
 
 
 # ── Constants hub (CGS) ─────────────────────────────────────────────────────
 @dataclass(frozen=True)
 class DishoomConstants:
-    """Frequently-needed dishoom constants, surfaced with units.
+    """Frequently-needed constants, sourced from :mod:`.constants`.
 
-    Pulled from dishoom's ``universal`` / ``moon_functions_5`` namespaces so the
-    rest of Energetic Prometheus never has to ``import *`` from dishoom.
+    Provides a single ``CONST`` object so the rest of Energetic Prometheus
+    never has to import from dishoom directly for constant values.
     """
 
-    amu: float = _u.amu                 # atomic mass unit [g]
-    k_B: float = _u.boltz               # Boltzmann constant [erg/K]
-    G: float = _u.G                     # gravitational constant [cgs]
-    m_Na: float = _u.mNa                # Na atom mass [g]
-    m_K: float = _u.mK                  # K atom mass [g]
-    m_Fe: float = _u.mFe                # Fe atom mass [g]
-    m_Mg: float = _u.mMg                # Mg atom mass [g]
-    k_hv_Na: float = _u.k_hv_Na         # Na photoionization rate at 1 AU [1/s]
-    au2cm: float = _u.au2cm             # 1 AU [cm]
-    r_Io: float = _u.rio                # Io radius [cm]
-    m_Io: float = _u.mio                # Io mass [g]
-    # MgSiO3 (enstatite) vapor-pressure coefficients (van Lieshout+ 2014).
-    A_mgsio3: float = _moon.A_mgsio3
-    B_mgsio3: float = _moon.B_mgsio3
-    mu_mgsio3: float = _moon.mu_mgsio3  # molar mass [amu]
-    X_Na_volcanic: float = _moon.Xna_0_volcanic  # volcanic Na mass fraction
+    amu: float = _c.amu
+    k_B: float = _c.k_B
+    G: float = _c.G
+    m_Na: float = _c.m_Na
+    m_K: float = _c.m_K
+    m_Fe: float = _c.m_Fe
+    m_Mg: float = _c.m_Mg
+    k_hv_Na: float = _c.k_hv_Na
+    au2cm: float = _c.au2cm
+    r_Io: float = _c.r_Io
+    m_Io: float = _c.m_Io
+    A_mgsio3: float = _c.MINERALS["MgSiO3"].A
+    B_mgsio3: float = _c.MINERALS["MgSiO3"].B
+    mu_mgsio3: float = _c.MINERALS["MgSiO3"].mu
+    X_Na_volcanic: float = _c.X_Na_volcanic
 
 
 CONST = DishoomConstants()
 
-# ── Mineral database (A, B, mu_amu) for all supported minerals ──────────────
-# Maps human-readable mineral/element names to ``(A [K], B, mu [amu])`` tuples
-# usable with ``Pvap_rocks(A, B, T)`` and ``Mdot0_thermal_notides(…)``.
+# ── Mineral database — (A, B, mu) tuples for backward compatibility ──────────
+# The canonical database with references lives in :data:`constants.MINERALS`.
 MINERAL_DB: dict[str, tuple[float, float, float]] = {
-    # Silicate minerals (van Lieshout+ 2014; dishoom canonical)
-    "MgSiO3":     (CONST.A_mgsio3,          CONST.B_mgsio3,          CONST.mu_mgsio3),
-    "Al2O3":      (_moon.A_al2o3,           _moon.B_al2o3,           _moon.mu_al2o3),
-    "SiO":        (_moon.A_sio,             _moon.B_sio,             _moon.mu_sio),
-    "SiC":        (_moon.A_silicon_carbide, _moon.B_silicon_carbide, _moon.mu_sic),
-    "SiO2":       (_moon.A_quartz,          _moon.B_quartz,          _moon.mu_quartz),
-    "C":          (_moon.A_graphite,        _moon.B_graphite,        _moon.mu_graphite),
-    "Mg2SiO4":    (_u.A_mg2sio4,            _u.B_mg2sio4,            _u.mu_mg2sio4),
-    "Fe2SiO4":    (_u.A_fe2sio4,            _u.B_fe2sio4,            _u.mu_fe2sio4),
-    
-    # Pure metallic elements (Alcock+ 1984 / CRC Handbook)
-    # Coefficients for log₁₀(P_vap/bar) = -A/T + B.
-    "Fe":         (47490, 31.7, 55.845),
-    "Ni":         (50600, 32.2, 58.693),
-    "Cr":         (47200, 30.0, 51.996),
-    "Mn":         (33600, 29.7, 54.938),
-    "Co":         (50300, 31.7, 58.933),
-    
-    # Metal oxide minerals
-    "NiO":        (55700, 33.5, 74.692),   # bunsenite; Brewer & Mastick 1951
-    "CaO":        (81000, 35.6, 56.077),   # lime; Lamoreaux+ 1987
-    "CaSiO3":     (74600, 36.9, 116.162),  # wollastonite; Sossi+ 2019
-    "TiO2":       (76900, 35.8, 79.866),   # rutile; Chase 1998 (JANAF)
+    name: (e.A, e.B, e.mu) for name, e in _c.MINERALS.items()
 }
 
 
