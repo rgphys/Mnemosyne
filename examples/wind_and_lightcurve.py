@@ -12,14 +12,14 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import numpy as np
-import energetic_prometheus as ep
-from energetic_prometheus import grids
+import mnemosyne as mn
+from mnemosyne import grids
 
 planet = grids.find_planet("WASP-49b")
 
 # Energy-limited escape: L_xuv ~ active-K-dwarf XUV; Na is a trace (xi=1e-3)
 # species advected in the H/He Parker wind (wind_mu defaults to 1.3 amu).
-model = ep.EnergyLimitedEscape(planet, L_xuv=1.4e28, T_wind=1e4, xi=1e-3,
+model = mn.EnergyLimitedEscape(planet, L_xuv=1.4e28, T_wind=1e4, xi=1e-3,
                                wind_model="parker")
 print(f"Na mass-loss rate: {model.mass_loss_rate():.3e} g/s")
 
@@ -27,7 +27,7 @@ print(f"Na mass-loss rate: {model.mass_loss_rate():.3e} g/s")
 win = grids.orbphase_window_from_hours(planet, 2.0)
 s_grid = grids.spatial_grid(planet, orbphase_window=win, orbphase_steps=11)
 
-result = ep.EnergeticTransit(model, s_grid=s_grid,
+result = mn.EnergeticTransit(model, s_grid=s_grid,
                              use_phoenix_star=False).run()
 
 # Phase-collapsed spectrum + depth.

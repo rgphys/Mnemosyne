@@ -33,7 +33,7 @@ with silence_stdout():
 class DishoomConstants:
     """Frequently-needed constants, sourced from :mod:`.constants`.
 
-    Provides a single ``CONST`` object so the rest of Energetic Prometheus
+    Provides a single ``CONST`` object so the rest of Mnemosyne
     never has to import from dishoom directly for constant values.
     """
 

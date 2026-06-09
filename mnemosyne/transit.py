@@ -1,4 +1,4 @@
-"""High-level Energetic Prometheus transit API.
+"""High-level Mnemosyne transit API.
 
 :class:`EnergeticTransit` runs the full pipeline **in memory** — dishoom
 energetics → Prometheus scenario → chord-summed transit — and returns a
@@ -8,7 +8,7 @@ lightcurve.  No setup files, no output files.
 
 Example::
 
-    from energetic_prometheus import EnergeticTransit, ThermalSublimation, grids
+    from mnemosyne import EnergeticTransit, ThermalSublimation, grids
 
     planet = grids.find_planet('WASP-49b')
     moon   = grids.make_moon(planet)
@@ -139,7 +139,7 @@ class EnergeticTransit:
     """Run a dishoom→Prometheus transit in memory.
 
     Args:
-        escape_model: An :class:`~energetic_prometheus.escape.EscapeModel`.
+        escape_model: An :class:`~mnemosyne.escape.EscapeModel`.
         w_grid: Prometheus ``WavelengthGrid`` (default: Na-D doublet window).
         s_grid: Prometheus ``geometryHandler.Grid`` (default: extended-exosphere
             grid at mid-transit, single orbital phase).

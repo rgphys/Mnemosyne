@@ -1,4 +1,4 @@
-"""Energetic Prometheus — in-memory coupling of dishoom escape physics and the
+"""Mnemosyne — in-memory coupling of dishoom escape physics and the
 Prometheus radiative-transfer engine.
 
 Instead of handing JSON setup files between the two codebases, this package lets
@@ -17,7 +17,7 @@ Two layers:
 
 Quick start::
 
-    from energetic_prometheus import EnergeticTransit, ThermalSublimation, grids
+    from mnemosyne import EnergeticTransit, ThermalSublimation, grids
 
     planet = grids.find_planet('WASP-49b')
     moon   = grids.make_moon(planet)

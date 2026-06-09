@@ -1,4 +1,4 @@
-"""Path + import bootstrap for Energetic Prometheus.
+"""Path + import bootstrap for Mnemosyne.
 
 This module makes the two upstream codebases importable from a single place and
 isolates their import-time side effects:
@@ -26,7 +26,7 @@ import os
 import sys
 
 # ── Locate the sibling codebases ────────────────────────────────────────────
-# This file lives at  <repo>/Energetic Prometheus/energetic_prometheus/_bootstrap.py
+# This file lives at  <repo>/Mnemosyne/mnemosyne/_bootstrap.py
 _PKG_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.abspath(os.path.join(_PKG_DIR, "..", ".."))
 PROMETHEUS_DIR = os.path.join(REPO_ROOT, "Prometheus")

@@ -1,4 +1,4 @@
-# Energetic Prometheus
+# Mnemosyne
 
 In-memory coupling of **dishoom** (atmospheric escape / energetics) and
 **Prometheus** (radiative transfer). Compute a moon or planet mass-loss rate
@@ -14,7 +14,7 @@ dishoom energetics  ──►  Prometheus scenario  ──►  chord-summed tran
 ## Why
 
 Previously, dishoom and Prometheus exchanged data through `setupFiles/*.txt` →
-`output/*.txt`. Energetic Prometheus replaces that with a typed Python API so
+`output/*.txt`. Mnemosyne replaces that with a typed Python API so
 escape physics and radiative transfer compose in a single process (sweeps,
 retrievals, notebooks).
 
@@ -31,22 +31,22 @@ automatically. Use the project venv (`source env/bin/activate`) and put the
 folder on `sys.path`:
 
 ```python
-import sys; sys.path.insert(0, "Energetic Prometheus")
-import energetic_prometheus as ep
+import sys; sys.path.insert(0, "Mnemosyne")
+import mnemosyne as mn
 ```
 
 ## Quick start
 
 ```python
-import energetic_prometheus as ep
-from energetic_prometheus import grids
+import mnemosyne as mn
+from mnemosyne import grids
 
 planet = grids.find_planet("WASP-49b")
 moon   = grids.make_moon(planet, a_over_Rp=1.7)
 
 # dishoom: thermal sublimation source rate → Prometheus: Na-D transit
-model  = ep.ThermalSublimation(moon, T_surface=1500.0)
-result = ep.EnergeticTransit(model, use_phoenix_star=False).run()
+model  = mn.ThermalSublimation(moon, T_surface=1500.0)
+result = mn.EnergeticTransit(model, use_phoenix_star=False).run()
 
 print(result.transit_depth() * 100, "% Na D2")   # excess absorption
 wav, spec = result.wavelength_ang, result.spectrum_normalized()
@@ -68,7 +68,7 @@ Runs the whole pipeline and returns a `TransitResult` with:
 ### Composable — escape models, scenario builders, grids
 
 ```python
-from energetic_prometheus import grids, radial_wind_scenario
+from mnemosyne import grids, radial_wind_scenario
 
 # build a Prometheus scenario from a raw mass-loss rate yourself:
 w_grid = grids.na_d_grid()
@@ -92,7 +92,7 @@ normalizes by mass continuity `n(r) = Ṁ / (4π r² v(r) μ)`.
 ## Layout
 
 ```
-energetic_prometheus/
+mnemosyne/
   _bootstrap.py       path wiring + dishoom stdout silencing
   dishoom_adapter.py  typed wrappers over dishoom escape functions + constants
   escape.py           EscapeModel classes (the composable physics layer)

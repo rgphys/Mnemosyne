@@ -18,7 +18,7 @@ Two families map onto two Prometheus scenario kinds:
   normalized by ``Mdot`` through mass continuity.
 
 You can use a model purely for its numbers (just call ``mass_loss_rate``) or
-hand it to :class:`~energetic_prometheus.transit.EnergeticTransit`.
+hand it to :class:`~mnemosyne.transit.EnergeticTransit`.
 """
 
 from __future__ import annotations

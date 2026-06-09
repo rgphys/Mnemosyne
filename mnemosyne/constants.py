@@ -1,4 +1,4 @@
-"""Physical, atomic, mineralogical, and body constants for Energetic Prometheus.
+"""Physical, atomic, mineralogical, and body constants for Mnemosyne.
 
 All quantities are CGS.  Each value carries an inline reference comment.
 
