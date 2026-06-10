@@ -25,7 +25,7 @@ import io
 import os
 import sys
 
-# ── Locate the sibling codebases ────────────────────────────────────────────
+#  Locate the sibling codebases 
 # This file lives at  <repo>/Mnemosyne/mnemosyne/_bootstrap.py
 _PKG_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.abspath(os.path.join(_PKG_DIR, "..", ".."))

@@ -50,7 +50,7 @@ class TransitResult:
     orbphase: np.ndarray
     planet: Any
 
-    # ── axis conversions ─────────────────────────────────────────────────────
+    #  axis conversions 
     @property
     def wavelength_ang(self) -> np.ndarray:
         """Wavelength grid [Å]."""
@@ -61,7 +61,7 @@ class TransitResult:
         """Wavelength grid [µm]."""
         return self.wavelength_cm * 1e4
 
-    # ── transmission spectrum ────────────────────────────────────────────────
+    #  transmission spectrum 
     def spectrum(self) -> np.ndarray:
         """Phase-collapsed transit depth ``R(λ)`` (median over orbital phase)."""
         return np.median(self.R_2D, axis=0)
@@ -71,7 +71,7 @@ class TransitResult:
         spec = self.spectrum()
         return spec / spec.max()
 
-    # ── derived line metrics ─────────────────────────────────────────────────
+    #  derived line metrics 
     def _masks(self, line_window_ang, continuum_exclude_ang):
         wav = self.wavelength_ang
         lo, hi = line_window_ang

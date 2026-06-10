@@ -22,13 +22,13 @@ from dataclasses import dataclass
 from ._bootstrap import silence_stdout
 from . import constants as _c
 
-# ── Import dishoom once, quietly ────────────────────────────────────────────
+#  Import dishoom once, quietly 
 with silence_stdout():
     import moon_functions_5 as _moon
     import functions4 as _f4
 
 
-# ── Constants hub (CGS) ─────────────────────────────────────────────────────
+#  Constants hub (CGS) 
 @dataclass(frozen=True)
 class DishoomConstants:
     """Frequently-needed constants, sourced from :mod:`.constants`.
@@ -56,14 +56,14 @@ class DishoomConstants:
 
 CONST = DishoomConstants()
 
-# ── Mineral database — (A, B, mu) tuples for backward compatibility ──────────
+#  Mineral database — (A, B, mu) tuples for backward compatibility 
 # The canonical database with references lives in :data:`constants.MINERALS`.
 MINERAL_DB: dict[str, tuple[float, float, float]] = {
     name: (e.A, e.B, e.mu) for name, e in _c.MINERALS.items()
 }
 
 
-# ── Energy-limited escape ───────────────────────────────────────────────────
+#  Energy-limited escape 
 def mdot_energy_limited(L_xuv: float, a_AU: float, R_body: float,
                         M_body: float) -> float:
     """Energy-limited mass-loss rate [g/s] (efficiency η = 0.1).
@@ -97,7 +97,7 @@ def mdot_energy_limited_xuv(F_xuv: float, R_body: float, M_body: float,
     return float(_moon.dMdt_ELescape_xuv(F_xuv, R_body, M_body, R_abs, eta, xi))
 
 
-# ── Thermal (Hertz-Knudsen) sublimation ─────────────────────────────────────
+#  Thermal (Hertz-Knudsen) sublimation 
 def mdot_thermal_sublimation(T_surface: float, R_body: float, xi: float,
                              A: float | None = None, B: float | None = None,
                              mu_mineral: float | None = None) -> float:
@@ -129,7 +129,7 @@ def vapor_pressure(T: float, A: float | None = None,
     return float(_f4.Pvap_rocks(A, B, T))
 
 
-# ── Tidal-heating driven source ─────────────────────────────────────────────
+#  Tidal-heating driven source 
 def mdot_tidal(M_body: float, R_body: float, P_days: float,
                tidal_eff: float, xi: float) -> float:
     """Tidal-heating driven mass-loss rate [g/s].
@@ -159,7 +159,7 @@ def mdot_thermal_plus_tidal(T_eq: float, R_body: float, M_body: float,
                                  tidal_eff, M_body, xi))
 
 
-# ── Surface-Jeans escape + exobase radius ───────────────────────────────────
+#  Surface-Jeans escape + exobase radius 
 def mdot_surface_jeans_Na(T_eq: float, R_body: float, M_body: float,
                           P_days: float, xi: float,
                           A: float | None = None, B: float | None = None,
@@ -212,7 +212,7 @@ def exobase_radius_hydrostatic(T_eq: float, P_days: float, xi: float,
                                       t_ion_s, xi, n0))
 
 
-# ── Helpers ─────────────────────────────────────────────────────────────────
+#  Helpers 
 def ionization_lifetime(a_AU: float, k_hv_1AU: float | None = None) -> float:
     """Photoionization lifetime [s] at orbital distance ``a_AU``.
 

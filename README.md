@@ -7,7 +7,7 @@ files, no output-file handoff. You get the transmission spectrum and lightcurve
 back as NumPy arrays.
 
 ```
-dishoom energetics  ──►  Prometheus scenario  ──►  chord-summed transit
+dishoom energetics  ►  Prometheus scenario  ►  chord-summed transit
  (Ṁ, N, exobase)         (Exosphere / Wind)        (R(phase, λ))
 ```
 

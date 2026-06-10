@@ -50,7 +50,7 @@ class EscapeModel(ABC):
         self.particle_mass = (CONST.m_Na if particle_mass is None
                               else particle_mass)
 
-    # ── physics ────────────────────────────────────────────────────────────
+    #  physics
     @abstractmethod
     def mass_loss_rate(self) -> float:
         """Source / mass-loss rate of the tracer [g/s]."""
@@ -87,13 +87,13 @@ class EscapeModel(ABC):
             "N_particles": self.particle_number(),
         }
 
-    # ── coupling to Prometheus ───────────────────────────────────────────────
+    #  coupling to Prometheus
     @abstractmethod
     def build_scenario(self, w_grid: Any, sigma_v: float, **kwargs) -> Any:
         """Build the Prometheus scenario this model maps onto."""
 
 
-# ── Moon-outgassing models → MoonExosphere ──────────────────────────────────
+#  Moon-outgassing models → MoonExosphere
 class _MoonOutgassingModel(EscapeModel):
     """Common machinery for moon-sourced, number-normalized exospheres."""
 
@@ -229,7 +229,7 @@ class SurfaceJeansEscape(_MoonOutgassingModel):
             m_volatile=self.particle_mass)
 
 
-# ── Planetary wind model → RadialWindExosphere ──────────────────────────────
+#  Planetary wind model → RadialWindExosphere
 class EnergyLimitedEscape(EscapeModel):
     """Energy-limited (XUV-driven) planetary wind.
 
