@@ -77,6 +77,19 @@ scen   = radial_wind_scenario(Mdot=2e7, planet=planet, species="NaI",
 # ... drop `scen` into gasProperties.Atmosphere([...]) as usual.
 ```
 
+> **These builders now live in Prometheus.** The grid/body/orbital helpers and
+> the scenario builders were upstreamed into Prometheus because they carry no
+> dishoom dependency — `gasProperties.na_d_grid` / `line_grid` /
+> `moon_exosphere_scenario` / `powerlaw_exosphere_scenario` /
+> `radial_wind_scenario` / `run_transit` / `TransitResult`,
+> `geometryHandler.spatial_grid` / `orbphase_window_from_hours`, and
+> `celestialBodies.find_planet` / `make_moon` / `mean_motion_ratio` /
+> `optimal_midtransit_phase` / `max_peak_shift_minutes`. The `mnemosyne.grids`,
+> `mnemosyne.scenarios`, and `mnemosyne.TransitResult` names are kept as
+> backward-compatible re-exports (the only Mnemosyne-side difference is the
+> `w_grid` keyword, which Prometheus spells `wavelengthGrid`). New code can
+> import these straight from Prometheus.
+
 ## Escape models
 
 | Model | dishoom physics | Prometheus scenario |
@@ -95,12 +108,19 @@ normalizes by mass continuity `n(r) = Ṁ / (4π r² v(r) μ)`.
 mnemosyne/
   _bootstrap.py       path wiring + dishoom stdout silencing
   dishoom_adapter.py  typed wrappers over dishoom escape functions + constants
-  escape.py           EscapeModel classes (the composable physics layer)
-  scenarios.py        raw N / Mdot → Prometheus scenario builders
-  grids.py            wavelength/spatial grid + moon helpers
-  transit.py          EnergeticTransit + TransitResult (headline API)
+  constants.py        mineral vapor-pressure DB + escape-physics constants
+  escape.py           EscapeModel classes (the dishoom-coupled physics layer)
+  scenarios.py        thin adapter → Prometheus scenario builders (keeps w_grid)
+  grids.py            re-exports of Prometheus grid/body/orbital helpers
+  transit.py          EnergeticTransit (dishoom coupling) + TransitResult re-export
 examples/             runnable quickstart + wind/lightcurve scripts
 ```
+
+The pure radiative-transfer / orbital-mechanics pieces (grids, scenario
+builders, `TransitResult`, the `run_transit` orchestration, and the moon
+orbital-mechanics relations) live in **Prometheus**; what remains here is the
+dishoom coupling — `dishoom_adapter`, the escape/source `constants`, the
+`escape` models, and the `EnergeticTransit` driver.
 
 ## Notes & caveats
 

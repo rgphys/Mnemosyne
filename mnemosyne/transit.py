@@ -6,6 +6,12 @@ energetics → Prometheus scenario → chord-summed transit — and returns a
 convenience accessors for the transmission spectrum and the band-integrated
 lightcurve.  No setup files, no output files.
 
+The radiative-transfer orchestration (build the ``Atmosphere``/``Transit``, run
+``sumOverChords``, package the cube) and the :class:`TransitResult` wrapper now
+live in Prometheus (``gasProperties.run_transit`` / ``gasProperties.TransitResult``);
+this class only contributes the dishoom-coupled scenario assembly and re-exports
+``TransitResult`` for backward compatibility.
+
 Example::
 
     from mnemosyne import EnergeticTransit, ThermalSublimation, grids
@@ -19,120 +25,21 @@ Example::
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, List, Optional
-
-import numpy as np
 
 from . import grids as _grids
 from ._bootstrap import import_prometheus
 
-_gasprop = import_prometheus()[0]
+_gasprop, _bodies, _geom, _const = import_prometheus()
 
-# Na D2 / D1 rest wavelengths [Å] for default bandpasses.
-NA_D2_ANG = 5889.95
-NA_D1_ANG = 5895.92
+# TransitResult was upstreamed into Prometheus; re-export it so
+# ``mnemosyne.TransitResult`` and ``mnemosyne.transit.TransitResult`` keep working.
+TransitResult = _gasprop.TransitResult
 
-
-@dataclass
-class TransitResult:
-    """Result of a transit calculation.
-
-    Attributes:
-        wavelength_cm: Wavelength grid [cm], shape ``(n_wav,)``.
-        R_2D: Transit depth cube ``R(phase, λ)``, shape ``(n_phase, n_wav)``.
-        orbphase: Orbital-phase axis [rad], shape ``(n_phase,)``.
-        planet: The Prometheus ``Planet`` used.
-    """
-
-    wavelength_cm: np.ndarray
-    R_2D: np.ndarray
-    orbphase: np.ndarray
-    planet: Any
-
-    #  axis conversions 
-    @property
-    def wavelength_ang(self) -> np.ndarray:
-        """Wavelength grid [Å]."""
-        return self.wavelength_cm * 1e8
-
-    @property
-    def wavelength_um(self) -> np.ndarray:
-        """Wavelength grid [µm]."""
-        return self.wavelength_cm * 1e4
-
-    #  transmission spectrum 
-    def spectrum(self) -> np.ndarray:
-        """Phase-collapsed transit depth ``R(λ)`` (median over orbital phase)."""
-        return np.median(self.R_2D, axis=0)
-
-    def spectrum_normalized(self) -> np.ndarray:
-        """Transmission spectrum normalized to its continuum (max → 1)."""
-        spec = self.spectrum()
-        return spec / spec.max()
-
-    #  derived line metrics 
-    def _masks(self, line_window_ang, continuum_exclude_ang):
-        wav = self.wavelength_ang
-        lo, hi = line_window_ang
-        line_mask = (wav >= lo) & (wav <= hi)
-        if continuum_exclude_ang is None:
-            cont_mask = ~line_mask
-        else:
-            clo, chi = continuum_exclude_ang
-            cont_mask = (wav < clo) | (wav > chi)
-        return line_mask, cont_mask
-
-    def transit_depth(self, line_window_ang=(NA_D2_ANG - 4.0, NA_D2_ANG + 4.0),
-                      continuum_exclude_ang=(5884.0, 5902.0),
-                      mode: str = "peak") -> float:
-        """Excess absorption depth in a line window, vs a clean continuum.
-
-        Args:
-            line_window_ang: ``(lo, hi)`` line bandpass [Å].
-            continuum_exclude_ang: ``(lo, hi)`` region to exclude from the
-                continuum estimate [Å]; ``None`` uses everything outside the
-                line window.
-            mode: ``'peak'`` (deepest pixel, matches the Doppler-shifted moon
-                cloud convention) or ``'mean'`` (band-averaged).
-
-        Returns:
-            Excess absorption as a fraction (multiply by 100 for percent).
-        """
-        spec = self.spectrum()
-        line_mask, cont_mask = self._masks(line_window_ang,
-                                           continuum_exclude_ang)
-        R_cont = np.median(spec[cont_mask])
-        if mode == "peak":
-            return float(1.0 - spec[line_mask].min() / R_cont)
-        elif mode == "mean":
-            return float(1.0 - spec[line_mask].mean() / R_cont)
-        raise ValueError(f"Unknown mode {mode!r}; use 'peak' or 'mean'.")
-
-    def lightcurve(self, line_window_ang=(NA_D2_ANG - 0.375, NA_D2_ANG + 0.375),
-                   continuum_exclude_ang=(5884.0, 5902.0), mode='mean') -> np.ndarray:
-        """Band-integrated lightcurve ``L(phase)`` = line / continuum.
-
-        Values < 1 mark net excess absorption at that orbital phase.  Requires a
-        grid built with ``orbphase_steps > 1``.
-
-        Args:
-            line_window_ang: ``(lo, hi)`` line bandpass [Å].
-            continuum_exclude_ang: continuum exclusion region [Å].
-            mode: 'mean' for band-integrated flux, 'peak' for max line depth.
-        """
-        line_mask, cont_mask = self._masks(line_window_ang,
-                                           continuum_exclude_ang)
-        cont_per_phase = np.mean(self.R_2D[:, cont_mask], axis=1)
-        
-        if mode == 'mean':
-            line_per_phase = np.mean(self.R_2D[:, line_mask], axis=1)
-        elif mode == 'peak':
-            line_per_phase = np.min(self.R_2D[:, line_mask], axis=1)
-        else:
-            raise ValueError(f"Unknown mode {mode!r}; use 'peak' or 'mean'.")
-            
-        return line_per_phase / cont_per_phase
+# Na D2 / D1 rest wavelengths [Å], vacuum (matching the Prometheus LineList).
+# Now sourced from Prometheus constants; kept here for backward compatibility.
+NA_D2_ANG = _const.NA_D2_ANG
+NA_D1_ANG = _const.NA_D1_ANG
 
 
 class EnergeticTransit:
@@ -170,23 +77,17 @@ class EnergeticTransit:
         scen = self.escape_model.build_scenario(self.w_grid, self.sigma_v)
         return [scen, *self.extra_scenarios]
 
-    def run(self, max_memory_gb: float = 4.0) -> TransitResult:
+    def run(self, max_memory_gb: float = 4.0) -> Any:
         """Execute the transit and return a :class:`TransitResult`.
+
+        Delegates the radiative-transfer orchestration to
+        ``Prometheus.pythonScripts.gasProperties.run_transit``.
 
         Args:
             max_memory_gb: Memory cap passed to ``Transit.sumOverChords``.
         """
-        atmos = _gasprop.Atmosphere(
-            self.build_scenarios(),
-            hasOrbitalDopplerShift=self.hasOrbitalDopplerShift)
-        sim = _gasprop.Transit(atmos, self.w_grid, self.s_grid)
-        sim.addWavelength()
-        if self.use_phoenix_star:
-            self.planet.hostStar.addFstarFunction(sim.wavelength)
-        R_2D = sim.sumOverChords(max_memory_gb=max_memory_gb)
-
-        orbphase = np.linspace(-self.s_grid.orbphase_border,
-                               self.s_grid.orbphase_border, R_2D.shape[0])
-        return TransitResult(wavelength_cm=np.asarray(sim.wavelength),
-                             R_2D=np.asarray(R_2D), orbphase=orbphase,
-                             planet=self.planet)
+        return _gasprop.run_transit(
+            self.build_scenarios(), self.w_grid, self.s_grid,
+            hasOrbitalDopplerShift=self.hasOrbitalDopplerShift,
+            use_phoenix_star=self.use_phoenix_star,
+            max_memory_gb=max_memory_gb)

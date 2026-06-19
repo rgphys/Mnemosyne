@@ -1,156 +1,51 @@
-"""Convenience builders for Prometheus wavelength/spatial grids and moons.
+"""Backward-compatible re-exports of grid/body/orbital-mechanics helpers.
 
-These wrap the Prometheus ``WavelengthGrid`` / ``geometryHandler.Grid`` /
-``celestialBodies.Moon`` constructors with research-sensible defaults (Na-D
-doublet window, stellar-radius integration limit) so a transit can be set up in
-a couple of lines.  All lengths are CGS.
+These convenience builders — wavelength + spatial grids, planet/moon factories,
+and the moon:planet orbital-mechanics relations — were **upstreamed into
+Prometheus** because they are pure radiative-transfer / orbital-mechanics
+helpers with no dishoom dependency.  They now live in:
+
+* ``Prometheus.pythonScripts.gasProperties``  — :func:`na_d_grid`, :func:`line_grid`
+* ``Prometheus.pythonScripts.geometryHandler`` — :func:`spatial_grid`,
+  :func:`orbphase_window_from_hours`
+* ``Prometheus.pythonScripts.celestialBodies`` — :func:`find_planet`,
+  :func:`make_moon`, :func:`mean_motion_ratio`, :func:`optimal_midtransit_phase`,
+  :func:`max_peak_shift_minutes`
+
+This module re-exports them under their original ``mnemosyne.grids`` names so
+existing callers keep working unchanged.  New code can import them straight from
+Prometheus.
 """
 
 from __future__ import annotations
-
-from typing import Any, Optional
-
-import numpy as np
 
 from ._bootstrap import import_prometheus
 
 _gasprop, _bodies, _geom, _const = import_prometheus()
 
+# Wavelength grids (Prometheus gasProperties)
+na_d_grid = _gasprop.na_d_grid
+line_grid = _gasprop.line_grid
 
-def find_planet(name: str) -> Any:
-    """Look up a Prometheus ``Planet`` by name (from ``Resources/planets.csv``)."""
-    planet = _bodies.AvailablePlanets().findPlanet(name)
-    if planet is None:
-        raise ValueError(f"Planet {name!r} not found in Prometheus resources.")
-    return planet
+# Spatial / temporal grids (Prometheus geometryHandler)
+spatial_grid = _geom.spatial_grid
+orbphase_window_from_hours = _geom.orbphase_window_from_hours
 
+# Bodies + moon orbital mechanics (Prometheus celestialBodies)
+find_planet = _bodies.find_planet
+make_moon = _bodies.make_moon
+mean_motion_ratio = _bodies.mean_motion_ratio
+optimal_midtransit_phase = _bodies.optimal_midtransit_phase
+max_peak_shift_minutes = _bodies.max_peak_shift_minutes
 
-def na_d_grid(lower_ang: float = 5880.0, upper_ang: float = 5910.0,
-              widthHighRes: float = 4e-8, resolutionLow: float = 3e-9,
-              resolutionHigh: float = 2e-10) -> Any:
-    """A ``WavelengthGrid`` spanning the Na-D doublet (defaults 5880–5910 Å).
-
-    Args:
-        lower_ang, upper_ang: Wavelength bounds [Å].
-        widthHighRes: High-res half-window around lines [cm].
-        resolutionLow, resolutionHigh: Pixel sizes outside / inside the
-            high-res window [cm].
-    """
-    return _gasprop.WavelengthGrid(
-        lower_w=lower_ang * 1e-8, upper_w=upper_ang * 1e-8,
-        widthHighRes=widthHighRes, resolutionLow=resolutionLow,
-        resolutionHigh=resolutionHigh)
-
-
-def line_grid(center_ang: float, half_window_ang: float = 15.0,
-              **kwargs) -> Any:
-    """A ``WavelengthGrid`` centred on an arbitrary line [Å]."""
-    return na_d_grid(lower_ang=center_ang - half_window_ang,
-                     upper_ang=center_ang + half_window_ang, **kwargs)
-
-
-def spatial_grid(planet: Any, x_border_Rp: float = 12.0, x_steps: int = 25,
-                 rho_steps: int = 60, phi_steps: int = 30,
-                 orbphase_window: float = 0.0, orbphase_steps: int = 1,
-                 rho_border: Optional[float] = None) -> Any:
-    """A ``geometryHandler.Grid`` with defaults tuned for an extended exosphere.
-
-    Args:
-        planet: Prometheus ``Planet`` object.
-        x_border_Rp: Half-length of the LOS chord, in planet radii.
-        x_steps, rho_steps, phi_steps: Grid resolution.
-        orbphase_window: Half-window of orbital phase [rad] (0 → single phase
-            at mid-transit; >0 → a lightcurve).
-        orbphase_steps: Number of orbital-phase samples.
-        rho_border: Sky-plane integration radius [cm] (default: stellar radius;
-            depth normalization is by the stellar disk — do not shrink it).
-    """
-    rho_border = planet.hostStar.R if rho_border is None else rho_border
-    return _geom.Grid(
-        x_midpoint=planet.a, x_border=x_border_Rp * planet.R, x_steps=x_steps,
-        rho_border=rho_border, rho_steps=rho_steps, phi_steps=phi_steps,
-        orbphase_border=orbphase_window, orbphase_steps=orbphase_steps)
-
-
-def orbphase_window_from_hours(planet: Any, half_window_hours: float) -> float:
-    """Convert a ±time half-window [hours] to an orbital-phase half-window [rad]."""
-    period_hours = planet.orbitalPeriod * 24.0
-    return (half_window_hours / period_hours) * 2.0 * np.pi
-
-
-def make_moon(planet: Any, a_over_Rp: float = 1.7,
-              R: Optional[float] = None,
-              midTransitOrbphase: float = 0.375 * 2.0 * np.pi) -> Any:
-    """A Prometheus ``Moon`` orbiting ``planet``.
-
-    Args:
-        planet: Host ``Planet`` object.
-        a_over_Rp: Moon semi-major axis in planet radii (default 1.7).
-        R: Moon radius [cm] (default Io radius).
-        midTransitOrbphase: Moon orbital phase at mid-transit [rad].
-    """
-    R = _const.R_Io if R is None else R
-    return _bodies.Moon(midTransitOrbphase=midTransitOrbphase, R=R,
-                        a=a_over_Rp * planet.R, hostPlanet=planet)
-
-
-#  Optimal moon phase theory (see Test/midtransit_phase_proof.tex)
-#
-# The moon's sky-plane offset during transit is
-#     y_m(theta) = a_p sin(theta) + a_m sin(theta_0 + N theta),
-# with N the moon:planet mean-motion ratio.  Writing eps = a_m/a_p and
-# expanding the lightcurve L = f(y_m/a_p) to first order in eps, the only
-# time-antisymmetric (i.e. detectable against any symmetric bare-planet
-# model) term is  eps sin(theta_0) f'(theta) cos(N theta), so every
-# asymmetry observable is proportional to sin(theta_0) and maximised at
-# quadrature.  The peak displacement admits an exact all-orders optimum at
-# quadrature corrected by the moon's own motion during the displacement.
-
-
-def mean_motion_ratio(planet: Any, a_over_Rp: float = 1.7) -> float:
-    """Moon:planet mean-motion ratio N = sqrt(a_p^3 M_p / (a_m^3 M_star))."""
-    a_m = a_over_Rp * planet.R
-    return float(np.sqrt((planet.a**3 * planet.M) /
-                         (a_m**3 * planet.hostStar.M)))
-
-
-def optimal_midtransit_phase(planet: Any, a_over_Rp: float = 1.7,
-                             branch: str = 'late') -> float:
-    """Moon phase at mid-transit maximising the lightcurve peak shift [rad].
-
-    Exact closed form (all orders in a_m/a_p, any monotone cloud profile):
-    the moon must reach maximum sky-plane elongation exactly as its cloud
-    crosses the stellar disk centre, which displaces the absorption peak by
-    the maximum possible +/- arcsin(a_m/a_p) of planet phase.
-
-        theta0* = 3*pi/2 - N*arcsin(a_m/a_p)   (branch='late',  peak after
-                                                mid-transit, trailing moon)
-        theta0* =   pi/2 + N*arcsin(a_m/a_p)   (branch='early', peak before
-                                                mid-transit, leading moon)
-
-    Both branches also sit on the flat |sin(theta0)| plateau of the
-    detectability (antisymmetric-RMS) curve, within <1% of its maximum.
-
-    Args:
-        planet: Host ``Planet`` object.
-        a_over_Rp: Moon semi-major axis in planet radii.
-        branch: 'late' or 'early' peak displacement.
-    """
-    N = mean_motion_ratio(planet, a_over_Rp)
-    delta = np.arcsin(a_over_Rp * planet.R / planet.a)
-    if branch == 'late':
-        return float(3 * np.pi / 2 - N * delta)
-    if branch == 'early':
-        return float(np.pi / 2 + N * delta)
-    raise ValueError(f"branch must be 'late' or 'early', got {branch!r}")
-
-
-def max_peak_shift_minutes(planet: Any, a_over_Rp: float = 1.7) -> float:
-    """Maximum achievable lightcurve peak displacement [minutes].
-
-    Delta_t = (T_p / 2 pi) arcsin(a_m/a_p): the time the planet takes to
-    traverse one moon-orbit radius in the sky.  This bound is attained at
-    ``optimal_midtransit_phase``.
-    """
-    delta = np.arcsin(a_over_Rp * planet.R / planet.a)
-    return float(delta / (2 * np.pi) * planet.orbitalPeriod * 24.0 * 60.0)
+__all__ = [
+    "na_d_grid",
+    "line_grid",
+    "spatial_grid",
+    "orbphase_window_from_hours",
+    "find_planet",
+    "make_moon",
+    "mean_motion_ratio",
+    "optimal_midtransit_phase",
+    "max_peak_shift_minutes",
+]
