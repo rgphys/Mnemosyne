@@ -55,8 +55,8 @@ def import_prometheus():
         tuple: ``(gasProperties, celestialBodies, geometryHandler, constants)``
         modules.
     """
-    import Prometheus.pythonScripts.gasProperties as gasprop
-    import Prometheus.pythonScripts.celestialBodies as bodies
-    import Prometheus.pythonScripts.geometryHandler as geom
-    import Prometheus.pythonScripts.constants as const
+    import Prometheus.core.gasProperties as gasprop
+    import Prometheus.core.celestialBodies as bodies
+    import Prometheus.core.geometryHandler as geom
+    import Prometheus.core.constants as const
     return gasprop, bodies, geom, const
